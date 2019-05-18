@@ -1,0 +1,184 @@
+<div class="ui segment article-content">
+
+
+                <div class="extra-padding">
+
+                    <h1>
+                        <i class="grey file text outline icon"></i>
+                        <span style="line-height: 34px;">5.8. 收藏商品列表 </span>
+
+
+                        <div class="pull-right">
+
+        <div class="ui labeled button tiny">
+
+          <div class="ui compact button tiny book-article-kb-star basic " data-act="star" data-id="1596">
+
+            <i class="thumbs up icon"></i> <span class="state">点赞</span>
+          </div>
+          <a class="ui basic label star_count">15</a>
+        </div>
+    </div>
+
+
+
+
+                                            <div class="ui right floated buttons" style="margin-right: 4px">
+                            <div class="ui dropdown simple basic label" style="margin-left:20px">
+                              <div class="text">5.5</div>
+                              <i class="dropdown icon"></i>
+                              <div class="menu">
+                                                                    <a class="item" href="https://learnku.com/courses/laravel-shop/5.8/user-interface-collection-of-goods-list?cpo=5">5.8</a>
+                                                                    <a class="item" href="https://learnku.com/courses/laravel-shop/5.7/user-interface-collection-of-goods-list?cpo=5">5.7</a>
+                                                                    <a class="item" href="https://learnku.com/courses/laravel-shop/5.5/user-interface-collection-of-goods-list?cpo=5">5.5</a>
+                                                              </div>
+                            </div>
+                        </div>
+                                        </h1>
+
+                                            <p class="book-article-meta">
+
+        <a href="https://learnku.com/courses/laravel-shop/5.5"><i class="icon book"></i> L05 Laravel 教程 - 电商实战 ( Laravel 5.5 ) </a>
+
+                    <span class="divider">/</span>
+
+            <span class="relative ">
+                <a class="chapter-title user-has-done-btn" data-act="chapter_sidebar_clicked" href="javascript:void(0);"><i class="icon map signs"></i> 第五章. 商品模块</a>
+            </span>
+            </p>
+
+
+
+
+                    <div class="ui divider"></div>
+
+                    <div class="ui readme markdown-body content-body fluidbox-content">
+
+
+
+
+
+                            <div name="abb263" data-unique="abb263"></div><h2>收藏商品列表</h2>
+<p>上一节我们实现了收藏商品的功能，接下来本章节要实现收藏商品的列表页面。</p>
+<div name="20ac9a" data-unique="20ac9a"></div><h2>1. 控制器</h2>
+<p>在 <code>ProductsController</code> 中添加一个 <code>favorites()</code> 方法：</p>
+<p><em>app/Http/Controllers/ProductsController.php</em></p>
+<pre class="  language-php"><code class="  language-php"><span class="token punctuation">.</span>
+<span class="token punctuation">.</span>
+<span class="token punctuation">.</span>
+    <span class="token keyword">public</span> <span class="token keyword">function</span> <span class="token function">favorites</span><span class="token punctuation">(</span>Request <span class="token variable">$request</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        <span class="token variable">$products</span> <span class="token operator">=</span> <span class="token variable">$request</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">user</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">favoriteProducts</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">paginate</span><span class="token punctuation">(</span><span class="token number">16</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">return</span> <span class="token function">view</span><span class="token punctuation">(</span><span class="token single-quoted-string string">'products.favorites'</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token single-quoted-string string">'products'</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token variable">$products</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span></code></pre>
+<p>这里我们用分页的方式取出当前用户的收藏商品，由于我们在定义关联关系的时候就已经加上了排序规则，这里就不需要再次设置了。</p>
+<div name="58a6bc" data-unique="58a6bc"></div><h2>2. 前端模板</h2>
+<p>创建一个新的模板文件：</p>
+<pre class="  language-php"><code class="  language-php">$ touch resources<span class="token operator">/</span>views<span class="token operator">/</span>products<span class="token operator">/</span>favorites<span class="token punctuation">.</span>blade<span class="token punctuation">.</span>php</code></pre>
+<p><em>resources/views/products/favorites.blade.php</em></p>
+<pre class="  language-php"><code class="  language-php">@<span class="token keyword">extends</span><span class="token punctuation">(</span><span class="token single-quoted-string string">'layouts.app'</span><span class="token punctuation">)</span>
+@<span class="token function">section</span><span class="token punctuation">(</span><span class="token single-quoted-string string">'title'</span><span class="token punctuation">,</span> <span class="token single-quoted-string string">'我的收藏'</span><span class="token punctuation">)</span>
+
+@<span class="token function">section</span><span class="token punctuation">(</span><span class="token single-quoted-string string">'content'</span><span class="token punctuation">)</span>
+<span class="token operator">&lt;</span>div <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"row"</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>div <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"col-lg-10 col-lg-offset-1"</span><span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span>div <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"panel panel-default"</span><span class="token operator">&gt;</span>
+  <span class="token operator">&lt;</span>div <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"panel-heading"</span><span class="token operator">&gt;</span>我的收藏<span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+  <span class="token operator">&lt;</span>div <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"panel-body"</span><span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>div <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"row products-list"</span><span class="token operator">&gt;</span>
+      @<span class="token keyword">foreach</span><span class="token punctuation">(</span><span class="token variable">$products</span> <span class="token keyword">as</span> <span class="token variable">$product</span><span class="token punctuation">)</span>
+        <span class="token operator">&lt;</span>div <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"col-xs-3 product-item"</span><span class="token operator">&gt;</span>
+          <span class="token operator">&lt;</span>div <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"product-content"</span><span class="token operator">&gt;</span>
+            <span class="token operator">&lt;</span>div <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"top"</span><span class="token operator">&gt;</span>
+              <span class="token operator">&lt;</span>div <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"img"</span><span class="token operator">&gt;</span>
+                <span class="token operator">&lt;</span>a href<span class="token operator">=</span><span class="token double-quoted-string string">"{{ route('products.show', ['product' =&gt; <span class="token interpolation"><span class="token variable">$product</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token property">id</span></span>]) }}"</span><span class="token operator">&gt;</span>
+                  <span class="token operator">&lt;</span>img src<span class="token operator">=</span><span class="token double-quoted-string string">"{{ <span class="token interpolation"><span class="token variable">$product</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token property">image_url</span></span> }}"</span> alt<span class="token operator">=</span><span class="token double-quoted-string string">""</span><span class="token operator">&gt;</span>
+                <span class="token operator">&lt;</span><span class="token operator">/</span>a<span class="token operator">&gt;</span>
+              <span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+              <span class="token operator">&lt;</span>div <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"price"</span><span class="token operator">&gt;</span><span class="token operator">&lt;</span>b<span class="token operator">&gt;</span>￥<span class="token operator">&lt;</span><span class="token operator">/</span>b<span class="token operator">&gt;</span><span class="token punctuation">{</span><span class="token punctuation">{</span> <span class="token variable">$product</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token property">price</span> <span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+              <span class="token operator">&lt;</span>a href<span class="token operator">=</span><span class="token double-quoted-string string">"{{ route('products.show', ['product' =&gt; <span class="token interpolation"><span class="token variable">$product</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token property">id</span></span>]) }}"</span><span class="token operator">&gt;</span><span class="token punctuation">{</span><span class="token punctuation">{</span> <span class="token variable">$product</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token property">title</span> <span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>a<span class="token operator">&gt;</span>
+            <span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+            <span class="token operator">&lt;</span>div <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"bottom"</span><span class="token operator">&gt;</span>
+              <span class="token operator">&lt;</span>div <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"sold_count"</span><span class="token operator">&gt;</span>销量 <span class="token operator">&lt;</span>span<span class="token operator">&gt;</span><span class="token punctuation">{</span><span class="token punctuation">{</span> <span class="token variable">$product</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token property">sold_count</span> <span class="token punctuation">}</span><span class="token punctuation">}</span>笔<span class="token operator">&lt;</span><span class="token operator">/</span>span<span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+              <span class="token operator">&lt;</span>div <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"review_count"</span><span class="token operator">&gt;</span>评价 <span class="token operator">&lt;</span>span<span class="token operator">&gt;</span><span class="token punctuation">{</span><span class="token punctuation">{</span> <span class="token variable">$product</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token property">review_count</span> <span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>span<span class="token operator">&gt;</span><span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+            <span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+          <span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+        <span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+      @<span class="token keyword">endforeach</span>
+    <span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>div <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"pull-right"</span><span class="token operator">&gt;</span><span class="token punctuation">{</span><span class="token punctuation">{</span> <span class="token variable">$products</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">render</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+  <span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>div<span class="token operator">&gt;</span>
+@endsection</code></pre>
+<p>代码基本上与商品列表页一致。</p>
+<div name="85aed1" data-unique="85aed1"></div><h2>3. 路由</h2>
+<p>接下来添加路由：</p>
+<p><em>routes/web.php</em></p>
+<pre class="  language-php"><code class="  language-php"><span class="token punctuation">.</span>
+<span class="token punctuation">.</span>
+<span class="token punctuation">.</span>
+<span class="token scope">Route<span class="token punctuation">::</span></span><span class="token function">group</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token single-quoted-string string">'middleware'</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token single-quoted-string string">'auth'</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token keyword">function</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token punctuation">.</span>
+    <span class="token punctuation">.</span>
+    <span class="token punctuation">.</span>
+    <span class="token scope">Route<span class="token punctuation">::</span></span><span class="token function">group</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token single-quoted-string string">'middleware'</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token single-quoted-string string">'email_verified'</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token keyword">function</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token punctuation">.</span>
+        <span class="token punctuation">.</span>
+        <span class="token punctuation">.</span>
+        <span class="token scope">Route<span class="token punctuation">::</span></span><span class="token function">get</span><span class="token punctuation">(</span><span class="token single-quoted-string string">'products/favorites'</span><span class="token punctuation">,</span> <span class="token single-quoted-string string">'ProductsController@favorites'</span><span class="token punctuation">)</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">name</span><span class="token punctuation">(</span><span class="token single-quoted-string string">'products.favorites'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre>
+<p>现在测试一下：访问 <a href="http://shop.test/products/favorites">http://shop.test/products/favorites</a></p>
+<p><a href="https://iocaffcdn.phphub.org/uploads/images/201805/21/5320/MuqZvnyL18.png?imageView2/2/w/1240/h/0" class="fluidbox fluidbox__instance-1 fluidbox--initialized fluidbox--closed fluidbox--ready"><div class="fluidbox__wrap" style="z-index: 990;"><img src="https://iocaffcdn.phphub.org/uploads/images/201805/21/5320/MuqZvnyL18.png?imageView2/2/w/1240/h/0" alt="file" class="fluidbox__thumb" style="opacity: 1;"><div class="fluidbox__ghost" style="width: 673px; height: 427px; top: 11px; left: 1px;"></div></div></a></p>
+<p>明明已经添加好路由却提示页面不存在，仔细观察 URL，发现和之前的 <code>products/{product}</code> 这个路由冲突了，Laravel 在匹配路由的时候会按定义的顺序依次查找，找到第一个匹配的路由就返回。所以当我们访问这个 URL 的时候会先匹配到商品详情页这个路由，然后把 <code>favorites</code> 当成商品 ID 去数据库查找，查不到对应的商品就抛出了不存在的异常。</p>
+<p>解决方案也很简单，把 <code>products/{product}</code> 这个路由放到后面即可：</p>
+<p><em>routes/web.php</em></p>
+<p><a href="https://iocaffcdn.phphub.org/uploads/images/201805/21/5320/cYOOcIJU4A.png?imageView2/2/w/1240/h/0" class="fluidbox fluidbox__instance-2 fluidbox--initialized fluidbox--closed fluidbox--ready"><div class="fluidbox__wrap" style="z-index: 990;"><img src="https://iocaffcdn.phphub.org/uploads/images/201805/21/5320/cYOOcIJU4A.png?imageView2/2/w/1240/h/0" alt="file" class="fluidbox__thumb" style="opacity: 1;"><div class="fluidbox__ghost" style="width: 673px; height: 278px; top: 11px; left: 1px;"></div></div></a></p>
+<p>再次刷新页面：</p>
+<p><a href="https://iocaffcdn.phphub.org/uploads/images/201806/03/5320/d6931TXmoq.png?imageView2/2/w/1240/h/0" class="fluidbox fluidbox__instance-3 fluidbox--initialized fluidbox--closed fluidbox--ready"><div class="fluidbox__wrap" style="z-index: 990;"><img src="https://iocaffcdn.phphub.org/uploads/images/201806/03/5320/d6931TXmoq.png?imageView2/2/w/1240/h/0" alt="file" class="fluidbox__thumb" style="opacity: 1;"><div class="fluidbox__ghost" style="width: 673px; height: 427px; top: 11px; left: 1px;"></div></div></a></p>
+<p>发现样式不对，我们完全可以复用之前商品列表的样式：</p>
+<p><em>resources/assets/sass/app.scss</em></p>
+<pre class="  language-php"><code class="  language-php"><span class="token punctuation">.</span>products<span class="token operator">-</span>index<span class="token operator">-</span>page<span class="token punctuation">,</span> <span class="token punctuation">.</span>products<span class="token operator">-</span>favorites<span class="token operator">-</span>page <span class="token punctuation">{</span>
+<span class="token punctuation">.</span>
+<span class="token punctuation">.</span>
+<span class="token punctuation">.</span>
+<span class="token punctuation">}</span></code></pre>
+<p>再次刷新页面：</p>
+<p><a href="https://iocaffcdn.phphub.org/uploads/images/201806/03/5320/cC1zc96Vi7.png?imageView2/2/w/1240/h/0" class="fluidbox fluidbox__instance-4 fluidbox--initialized fluidbox--closed fluidbox--ready"><div class="fluidbox__wrap" style="z-index: 990;"><img src="https://iocaffcdn.phphub.org/uploads/images/201806/03/5320/cC1zc96Vi7.png?imageView2/2/w/1240/h/0" alt="file" class="fluidbox__thumb" style="opacity: 1;"><div class="fluidbox__ghost" style="width: 673px; height: 427px; top: 11px; left: 1px;"></div></div></a></p>
+<div name="d0ae84" data-unique="d0ae84"></div><h2>4. 添加入口</h2>
+<p>最后我们需要在页面菜单里添加 <code>我的收藏</code> 链接：</p>
+<p><em>resources/views/layouts/_header.blade.php</em></p>
+<pre class="  language-php"><code class="  language-php"><span class="token punctuation">.</span>
+<span class="token punctuation">.</span>
+<span class="token punctuation">.</span>
+<span class="token operator">&lt;</span>ul <span class="token keyword">class</span><span class="token operator">=</span><span class="token double-quoted-string string">"dropdown-menu"</span> role<span class="token operator">=</span><span class="token double-quoted-string string">"menu"</span><span class="token operator">&gt;</span>
+  <span class="token punctuation">.</span>
+  <span class="token punctuation">.</span>
+  <span class="token punctuation">.</span>
+  <span class="token operator">&lt;</span>li<span class="token operator">&gt;</span>
+    <span class="token operator">&lt;</span>a href<span class="token operator">=</span><span class="token double-quoted-string string">"{{ route('products.favorites') }}"</span><span class="token operator">&gt;</span>我的收藏<span class="token operator">&lt;</span><span class="token operator">/</span>a<span class="token operator">&gt;</span>
+  <span class="token operator">&lt;</span><span class="token operator">/</span>li<span class="token operator">&gt;</span>
+  <span class="token punctuation">.</span>
+  <span class="token punctuation">.</span>
+  <span class="token punctuation">,</span>
+<span class="token operator">&lt;</span><span class="token operator">/</span>ul<span class="token operator">&gt;</span>
+<span class="token punctuation">.</span>
+<span class="token punctuation">.</span>
+<span class="token punctuation">.</span></code></pre>
+<p><a href="https://iocaffcdn.phphub.org/uploads/images/201806/03/5320/zK6vYCtBl4.png?imageView2/2/w/1240/h/0" class="fluidbox fluidbox__instance-5 fluidbox--initialized fluidbox--closed fluidbox--ready"><div class="fluidbox__wrap" style="z-index: 990;"><img src="https://iocaffcdn.phphub.org/uploads/images/201806/03/5320/zK6vYCtBl4.png?imageView2/2/w/1240/h/0" alt="file" class="fluidbox__thumb" style="opacity: 1;"><div class="fluidbox__ghost" style="width: 673px; height: 427px; top: 11px; left: 1px;"></div></div></a></p>
+<div name="b462ae" data-unique="b462ae"></div><h2>Git 代码版本控制</h2>
+<p>接着让我们将这些文件加入到版本控制中：</p>
+<pre class="  language-php"><code class="  language-php">$ git add <span class="token operator">-</span><span class="token constant">A</span>
+$ git commit <span class="token operator">-</span>m <span class="token double-quoted-string string">"用户界面 - 收藏商品列表"</span></code></pre>
+
+                            <p></p>
+<div style="position: absolute!important;height: 1px;width: 1px;overflow: hidden;clip: rect(1px,1px,1px,1px);">本文章首发在 <a href="https://learnku.com/">LearnKu.com</a> 网站上。</div>
+                                            </div>
+
+                </div>
+
+
+            </div>
