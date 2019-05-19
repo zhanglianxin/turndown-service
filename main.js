@@ -32,7 +32,7 @@ let convert = (html) => {
                 && node.getAttribute('class').includes('fluidbox fluidbox__instance')
                 && node.getAttribute('href')
                 && node.getAttribute('href').includes('https://')
-                && node.getAttribute('href').includes('.png'));
+                && node.getAttribute('href').includes('uploads/images'));
         },
         replacement: (content, node, options) => {
             return content;
