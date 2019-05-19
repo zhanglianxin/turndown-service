@@ -1,0 +1,183 @@
+<div class="ui segment article-content">
+
+                
+                <div class="extra-padding">
+
+                    <h1>
+                        <i class="grey file text outline icon"></i>
+                        <span style="line-height: 34px;">6.5. 关闭未支付订单 </span>
+
+                        
+                        <div class="pull-right">
+
+        <div class="ui labeled button tiny">
+
+          <div class="ui compact button tiny book-article-kb-star basic " data-act="star" data-id="1667">
+
+            <i class="thumbs up icon"></i> <span class="state">点赞</span>
+          </div>
+          <a class="ui basic label star_count">16</a>
+        </div>
+    </div>
+
+
+
+
+                                            <div class="ui right floated buttons" style="margin-right: 4px">
+                            <div class="ui dropdown simple basic label" style="margin-left:20px">
+                              <div class="text">5.5</div>
+                              <i class="dropdown icon"></i>
+                              <div class="menu">
+                                                                    <a class="item" href="https://learnku.com/courses/laravel-shop/5.8/closing-the-unpaid-order?cpo=6">5.8</a>
+                                                                    <a class="item" href="https://learnku.com/courses/laravel-shop/5.7/closing-the-unpaid-order?cpo=6">5.7</a>
+                                                                    <a class="item" href="https://learnku.com/courses/laravel-shop/5.5/closing-the-unpaid-order?cpo=6">5.5</a>
+                                                              </div>
+                            </div>
+                        </div>
+                                        </h1>
+
+                                            <p class="book-article-meta">
+
+        <a href="https://learnku.com/courses/laravel-shop/5.5"><i class="icon book"></i> L05 Laravel 教程 - 电商实战 ( Laravel 5.5 ) </a>
+
+                    <span class="divider">/</span>
+
+            <span class="relative ">
+                <a class="chapter-title user-has-done-btn" data-act="chapter_sidebar_clicked" href="javascript:void(0);"><i class="icon map signs"></i> 第六章. 购物车 &amp; 订单模块</a>
+            </span>
+            </p>
+
+
+
+                        
+                    <div class="ui divider"></div>
+
+                    <div class="ui readme markdown-body content-body fluidbox-content">
+
+                        
+                        
+                        
+                        
+                            <div name="a637d9" data-unique="a637d9"></div><h2>关闭未支付订单</h2>
+<p>上一节我们实现了创建订单的功能，在创建订单的同时我们减去了对应商品 SKU 的库存，恶意用户可以通过下大量的订单又不支付来占用商品库存，让正常的用户因为库存不足而无法下单。因此我们需要有一个关闭未支付订单的机制，当创建订单之后一定时间内没有支付，将关闭订单并退回减去的库存。</p>
+<p>对于这个需求我们可以用 Laravel 提供的延迟任务（Delayed Job）功能来解决。当我们的系统触发了一个延迟任务时，Laravel 会用当前时间加上任务的延迟时间计算出任务应该被执行的时间戳，然后将这个时间戳和任务信息序列化之后存入队列，Laravel 的队列处理器会不断查询并执行队列中满足预计执行时间等于或早于当前时间的任务。</p>
+<div name="e986ef" data-unique="e986ef"></div><h2>1. 创建任务</h2>
+<p>我们通过 <code>make:job</code> 命令来创建一个任务：</p>
+<pre class="  language-php"><code class="  language-php">$ php artisan make<span class="token punctuation">:</span>job CloseOrder</code></pre>
+<p>创建的任务类保存在 <code>app/Jobs</code> 目录下，现在编辑刚刚创建的任务类：</p>
+<p><em>app/Jobs/CloseOrder.php</em></p>
+<pre class="  language-php"><code class="  language-php"><span class="token php language-php"><span class="token delimiter important">&lt;?php</span>
+
+<span class="token keyword">namespace</span> <span class="token package">App<span class="token punctuation">\</span>Jobs</span><span class="token punctuation">;</span>
+
+<span class="token keyword">use</span> <span class="token package">Illuminate<span class="token punctuation">\</span>Bus<span class="token punctuation">\</span>Queueable</span><span class="token punctuation">;</span>
+<span class="token keyword">use</span> <span class="token package">Illuminate<span class="token punctuation">\</span>Queue<span class="token punctuation">\</span>SerializesModels</span><span class="token punctuation">;</span>
+<span class="token keyword">use</span> <span class="token package">Illuminate<span class="token punctuation">\</span>Queue<span class="token punctuation">\</span>InteractsWithQueue</span><span class="token punctuation">;</span>
+<span class="token keyword">use</span> <span class="token package">Illuminate<span class="token punctuation">\</span>Contracts<span class="token punctuation">\</span>Queue<span class="token punctuation">\</span>ShouldQueue</span><span class="token punctuation">;</span>
+<span class="token keyword">use</span> <span class="token package">Illuminate<span class="token punctuation">\</span>Foundation<span class="token punctuation">\</span>Bus<span class="token punctuation">\</span>Dispatchable</span><span class="token punctuation">;</span>
+<span class="token keyword">use</span> <span class="token package">App<span class="token punctuation">\</span>Models<span class="token punctuation">\</span>Order</span><span class="token punctuation">;</span>
+
+<span class="token comment">// 代表这个类需要被放到队列中执行，而不是触发时立即执行</span>
+<span class="token keyword">class</span> <span class="token class-name">CloseOrder</span> <span class="token keyword">implements</span> <span class="token class-name">ShouldQueue</span>
+<span class="token punctuation">{</span>
+    <span class="token keyword">use</span> <span class="token package">Dispatchable</span><span class="token punctuation">,</span> InteractsWithQueue<span class="token punctuation">,</span> Queueable<span class="token punctuation">,</span> SerializesModels<span class="token punctuation">;</span>
+
+    <span class="token keyword">protected</span> <span class="token variable">$order</span><span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token keyword">function</span> <span class="token function">__construct</span><span class="token punctuation">(</span>Order <span class="token variable">$order</span><span class="token punctuation">,</span> <span class="token variable">$delay</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        <span class="token this">$this</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token property">order</span> <span class="token operator">=</span> <span class="token variable">$order</span><span class="token punctuation">;</span>
+        <span class="token comment">// 设置延迟的时间，delay() 方法的参数代表多少秒之后执行</span>
+        <span class="token this">$this</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">delay</span><span class="token punctuation">(</span><span class="token variable">$delay</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token comment">// 定义这个任务类具体的执行逻辑</span>
+    <span class="token comment">// 当队列处理器从队列中取出任务时，会调用 handle() 方法</span>
+    <span class="token keyword">public</span> <span class="token keyword">function</span> <span class="token function">handle</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        <span class="token comment">// 判断对应的订单是否已经被支付</span>
+        <span class="token comment">// 如果已经支付则不需要关闭订单，直接退出</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token this">$this</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token property">order</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token property">paid_at</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment">// 通过事务执行 sql</span>
+        \<span class="token scope">DB<span class="token punctuation">::</span></span><span class="token function">transaction</span><span class="token punctuation">(</span><span class="token keyword">function</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token comment">// 将订单的 closed 字段标记为 true，即关闭订单</span>
+            <span class="token this">$this</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token property">order</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">update</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token single-quoted-string string">'closed'</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token boolean constant">true</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment">// 循环遍历订单中的商品 SKU，将订单中的数量加回到 SKU 的库存中去</span>
+            <span class="token keyword">foreach</span> <span class="token punctuation">(</span><span class="token this">$this</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token property">order</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token property">items</span> <span class="token keyword">as</span> <span class="token variable">$item</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token variable">$item</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token property">productSku</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">addStock</span><span class="token punctuation">(</span><span class="token variable">$item</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token property">amount</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span></span></code></pre>
+<div name="2c9db9" data-unique="2c9db9"></div><h2>2. 触发任务</h2>
+<p>接下来我们需要在创建订单之后触发这个任务：</p>
+<p><em>app/Http/Controllers/OrdersController.php</em></p>
+<pre class="  language-php"><code class="  language-php"><span class="token keyword">use</span> <span class="token package">App<span class="token punctuation">\</span>Jobs<span class="token punctuation">\</span>CloseOrder</span><span class="token punctuation">;</span>
+    <span class="token punctuation">.</span>
+    <span class="token punctuation">.</span>
+    <span class="token punctuation">.</span>
+    <span class="token keyword">public</span> <span class="token keyword">function</span> <span class="token function">store</span><span class="token punctuation">(</span>Request <span class="token variable">$request</span><span class="token punctuation">)</span>
+    <span class="token punctuation">{</span>
+        <span class="token punctuation">.</span>
+        <span class="token punctuation">.</span>
+        <span class="token punctuation">.</span>
+        <span class="token this">$this</span><span class="token operator">-</span><span class="token operator">&gt;</span><span class="token function">dispatch</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">CloseOrder</span><span class="token punctuation">(</span><span class="token variable">$order</span><span class="token punctuation">,</span> <span class="token function">config</span><span class="token punctuation">(</span><span class="token single-quoted-string string">'app.order_ttl'</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">return</span> <span class="token variable">$order</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span></code></pre>
+<p><code>CloseOrder</code> 构造函数的第二个参数延迟时间我们从配置文件中读取，<strong>为了方便我们测试，把这个值设置成 30 秒</strong>：</p>
+<p><em>config/app.php</em></p>
+<pre class="  language-php"><code class="  language-php"><span class="token single-quoted-string string">'order_ttl'</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token number">30</span><span class="token punctuation">,</span></code></pre>
+<div name="572ea9" data-unique="572ea9"></div><h2>3. 测试</h2>
+<p>默认情况下，Laravel 生成的 <code>.env</code> 文件里把队列的驱动设置成了 <code>sync</code>（同步），在同步模式下延迟任务会被立即执行，所以需要先把队列的驱动改成 <code>redis</code>：</p>
+<p><em>.env</em></p>
+<pre class="  language-php"><code class="  language-php"><span class="token punctuation">.</span>
+<span class="token punctuation">.</span>
+<span class="token punctuation">.</span>
+<span class="token constant">QUEUE_DRIVER</span><span class="token operator">=</span>redis
+<span class="token punctuation">.</span>
+<span class="token punctuation">.</span>
+<span class="token punctuation">.</span></code></pre>
+<p>要使用 <code>redis</code> 作为队列驱动，我们还需要引入 <code>predis/predis</code> 这个包</p>
+<pre class="  language-php"><code class="  language-php">$ composer <span class="token keyword">require</span> predis<span class="token operator">/</span>predis</code></pre>
+<p>接下来启动队列处理器：</p>
+<pre class="  language-php"><code class="  language-php">$ php artisan queue<span class="token punctuation">:</span>work</code></pre>
+<p>进入商品列表页，任意选择一个商品并将其加入购物车，记住库存数量：</p>
+<p><a href="https://iocaffcdn.phphub.org/uploads/images/201806/03/5320/7zLXVYL9wd.png?imageView2/2/w/1240/h/0" class="fluidbox fluidbox__instance-1 fluidbox--initialized fluidbox--closed fluidbox--ready"><div class="fluidbox__wrap" style="z-index: 990;"><img src="https://iocaffcdn.phphub.org/uploads/images/201806/03/5320/7zLXVYL9wd.png?imageView2/2/w/1240/h/0" alt="file" class="fluidbox__thumb" style="opacity: 1;"><div class="fluidbox__ghost" style="width: 626px; height: 397px; top: 11px; left: 1px;"></div></div></a></p>
+<p>提交订单之后再次进入该商品页面查看库存：</p>
+<p><a href="https://iocaffcdn.phphub.org/uploads/images/201806/03/5320/hfq2cpNOd2.png?imageView2/2/w/1240/h/0" class="fluidbox fluidbox__instance-2 fluidbox--initialized fluidbox--closed fluidbox--ready"><div class="fluidbox__wrap" style="z-index: 990;"><img src="https://iocaffcdn.phphub.org/uploads/images/201806/03/5320/hfq2cpNOd2.png?imageView2/2/w/1240/h/0" alt="file" class="fluidbox__thumb" style="opacity: 1;"><div class="fluidbox__ghost" style="width: 626px; height: 397px; top: 11px; left: 1px;"></div></div></a></p>
+<p>可以看到数量减少了。</p>
+<blockquote>
+<p>一定要在 30 秒内完成这个动作，否则关闭订单的任务就会被执行，库存会被退回。</p>
+</blockquote>
+<p>查看启动队列处理器的终端窗口，可以看到任务已经被执行：</p>
+<p><a href="https://iocaffcdn.phphub.org/uploads/images/201806/05/5320/BrbbIRCEhv.png?imageView2/2/w/1240/h/0" class="fluidbox fluidbox__instance-3 fluidbox--initialized fluidbox--closed fluidbox--ready"><div class="fluidbox__wrap" style="z-index: 990;"><img src="https://iocaffcdn.phphub.org/uploads/images/201806/05/5320/BrbbIRCEhv.png?imageView2/2/w/1240/h/0" alt="file" class="fluidbox__thumb" style="opacity: 1;"><div class="fluidbox__ghost" style="width: 626px; height: 182px; top: 11px; left: 1px;"></div></div></a></p>
+<p>到数据库中查看订单的状态：</p>
+<p><a href="https://iocaffcdn.phphub.org/uploads/images/201806/03/5320/S5OFEqGALZ.png?imageView2/2/w/1240/h/0" class="fluidbox fluidbox__instance-4 fluidbox--initialized fluidbox--closed fluidbox--ready"><div class="fluidbox__wrap" style="z-index: 990;"><img src="https://iocaffcdn.phphub.org/uploads/images/201806/03/5320/S5OFEqGALZ.png?imageView2/2/w/1240/h/0" alt="file" class="fluidbox__thumb" style="opacity: 1;"><div class="fluidbox__ghost" style="width: 626px; height: 439px; top: 11px; left: 1px;"></div></div></a></p>
+<p><code>closed</code> 字段已经被标成了 <code>1</code>。</p>
+<p>再刷新对应的商品页面：</p>
+<p><a href="https://iocaffcdn.phphub.org/uploads/images/201806/03/5320/HmazueCSiI.png?imageView2/2/w/1240/h/0" class="fluidbox fluidbox__instance-5 fluidbox--initialized fluidbox--closed fluidbox--ready"><div class="fluidbox__wrap" style="z-index: 990;"><img src="https://iocaffcdn.phphub.org/uploads/images/201806/03/5320/HmazueCSiI.png?imageView2/2/w/1240/h/0" alt="file" class="fluidbox__thumb" style="opacity: 1;"><div class="fluidbox__ghost" style="width: 626px; height: 397px; top: 11px; left: 1px;"></div></div></a></p>
+<p>库存回到原本的数值。</p>
+<div name="765293" data-unique="765293"></div><h2>4. 调整参数</h2>
+<p>在终端按 <code>ctrl + c</code> 退出队列处理器。</p>
+<p>接下来我们把延迟的参数调成 <code>1800</code> 也就是半个小时，如果用户在下单之后半个小时之内没有支付，我们将关闭订单并退回库存。</p>
+<p><em>config/app.php</em></p>
+<pre class="  language-php"><code class="  language-php"><span class="token single-quoted-string string">'order_ttl'</span> <span class="token operator">=</span><span class="token operator">&gt;</span> <span class="token number">1800</span><span class="token punctuation">,</span></code></pre>
+<blockquote>
+<p>不同类型的电商网站对这个参数要求不一样，在正式的项目中这个参数通常会由产品经理或者运营根据项目的具体情况决定。</p>
+</blockquote>
+<div name="b462ae" data-unique="b462ae"></div><h2>Git 代码版本控制</h2>
+<p>接着让我们将这些文件加入到版本控制中：</p>
+<pre class="  language-php"><code class="  language-php">$ git add <span class="token operator">-</span><span class="token constant">A</span>
+$ git commit <span class="token operator">-</span>m <span class="token double-quoted-string string">"关闭未支付订单"</span></code></pre>
+
+                            <p></p>
+<div style="position: absolute!important;height: 1px;width: 1px;overflow: hidden;clip: rect(1px,1px,1px,1px);">本文章首发在 <a href="https://learnku.com/">LearnKu.com</a> 网站上。</div>
+                                            </div>
+
+                </div>
+
+                
+            </div>

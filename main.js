@@ -48,7 +48,7 @@ let convert = (html) => {
         },
     });
 
-    return turndownService.turndown(html);
+    return turndownService.turndown(html) + "\n";
 };
 
 http.createServer((req, res) => {
@@ -56,27 +56,41 @@ http.createServer((req, res) => {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.setHeader('Access-Control-Allow-Origin','*');
 
-    if ('POST' == req.method) {
-        let body = [];
-        req.on('error', (err) => {
-            console.err(err);
-        }).on('data', (chunk) => {
-            let maxLength = 1 << 24; // 16MB
-            if (chunk.length > maxLength) {
-                req.connection.destroy();
-                return;
+    switch (req.url) {
+        case '':
+        case '/':
+            if ('POST' == req.method) {
+                let body = [];
+                req.on('error', (err) => {
+                    console.err(err);
+                }).on('data', (chunk) => {
+                    let maxLength = 1 << 24; // 16MB
+                    if (chunk.length > maxLength) {
+                        req.connection.destroy();
+                        return;
+                    }
+                    body.push(chunk);
+                }).on('end', () => {
+                    let html = Buffer.concat(body).toString();
+                    console.log(`input size: ${html.length} B`);
+                    if (0 == html.trim().length) {
+                        res.statusCode = 204;
+                        res.end(null);
+                        return;
+                    }
+                    let md = convert(html);
+                    console.log(`output size: ${md.length} B`);
+                    res.statusCode = 200;
+                    res.end(md);
+                });
+            } else {
+                res.statusCode = 405;
+                res.end('Invalid request');
             }
-            body.push(chunk);
-        }).on('end', () => {
-            let html = Buffer.concat(body).toString();
-            console.log(`input size: ${html.length} B`);
-            let md = convert(html);
-            console.log(`output size: ${md.length} B`);
-            res.statusCode = 200;
-            res.end(md + "\n");
-        });
-    } else {
-        res.statusCode = 405;
-        res.end('Invalid request');
+            break;
+        default:
+            res.statusCode = 404;
+            res.end(null);
+            break;
     }
 }).listen(9999);
