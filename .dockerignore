@@ -3,4 +3,4 @@ node_modules/
 test/
 
 .gitignore
-.install.sh
+Makefile
