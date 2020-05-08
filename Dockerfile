@@ -1,4 +1,5 @@
 FROM node:12-alpine
+LABEL maintainer="bryanhuntesl"
 LABEL maintainer="coolman@coolman.site"
 
 COPY . /app
